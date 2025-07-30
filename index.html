@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Expense Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+  * { box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f4f6f8;
+  color: #212529;
+  margin: 0;
+  padding: 0;
+  transition: background 0.3s, color 0.3s;
+}
+.dark {
+  background: #121212;
+  color: #eee;
+}
+.container {
+  max-width: 960px;
+  margin: auto;
+  padding: 1rem;
+}
+h1 {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  color: #007bff;
+}
+input, select, button {
+  padding: 0.6rem;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+button {
+  background: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+button:hover { background: #0056b3; }
+.btn-small {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
+  margin-left: 0.4rem;
+  border-radius: 0.4rem;
+}
+.btn-edit { background: #ffc107; color: #212529; }
+.btn-delete { background: #dc3545; }
+
+.card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  margin-bottom: 1.5rem;
+}
+.dark .card {
+  background: #1e1e1e;
+}
+
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.transaction {
+  border-left: 5px solid #ccc;
+  padding: 0.8rem 1rem;
+  border:1px solid red;
+  /* background: #1e1e1e; */
+  border-radius: 0.6rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: transform 0.2s;
+}
+.transaction:hover {
+  transform: scale(1.01);
+}
+.transaction.income { border-color: #28a745; }
+.transaction.expense { border-color: #dc3545; }
+
+.transaction-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  margin-bottom: 0.4rem;
+  font-size: 1rem;
+}
+.transaction-footer {
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+canvas {
+  max-width: 300px;
+  max-height: 300px;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 1rem auto;
+}
+.dark canvas {
+  background: #1e1e1e;
+}
+
+.filters, .export-import {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+  align-items: center;
+}
+.filters select {
+  max-width: 200px;
+}
+.summary ul { padding-left: 1.2rem; }
+
+.summary-cards {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+.summary-card {
+  flex: 1 1 200px;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 1.2rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+.summary-card:hover {
+  transform: translateY(-5px);
+}
+.income-card {
+  color: #28a745;
+  border-left: 6px solid #28a745;
+
+  border-right: 6px solid #28a745;
+}
+.expense-card {
+  color: #dc3545;
+  border-left: 6px solid #dc3545;
+  border-right: 6px solid #dc3545;
+}
+.dark .summary-card {
+  background: #1f1f1f;
+  color: #eee;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+  .filters,
+  .export-import {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .summary-card {
+    font-size: 1rem;
+    padding: 1rem;
+  }
+  .transaction-header,
+  .transaction-footer {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+#darkModeToggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: #ffffff;
+  color: #333;
+  font-size: 1.5rem;
+  border: none;
+  border-radius: 50%;
+  padding: 0.6rem 0.8rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  cursor: pointer;
+  z-index: 1000;
+  transition: background 0.3s, color 0.3s;
+}
+#darkModeToggle:hover {
+  background: #f0f0f0;
+}
+.dark #darkModeToggle {
+  background: #2b2b2b;
+  color: #f5f5f5;
+}
+#darkModeToggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  background: #ffffff;
+  color: #333;
+  font-size: 18px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  z-index: 1000;
+  transition: background 0.3s, color 0.3s;
+}
+#darkModeToggle:hover {
+  background: #e2e6ea;
+}
+.dark #darkModeToggle {
+  background: #2b2b2b;
+  color: #f5f5f5;
+}
+
+</style>
+</head>
+<body>
+    <button id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">🌙</button>
+
+<div class="container">
+    <h1>Money Tracker</h1>
+    <div class="summary-cards">
+        <div class="summary-card income-card" id="totalIncome">Income: ₹0</div>
+        <div class="summary-card expense-card" id="totalExpense">Expense: ₹0</div>
+      </div>
+      
+  
+  <div class="card">
+    <h2 style="margin-top:0;">➕ Add Transaction</h2>
+    <input type="number" id="amount" placeholder="Amount">
+    <select id="type">
+      <option value="expense">Expense</option>
+      <option value="income">Income</option>
+    </select>
+    <!-- <select id="category">
+      <option>Food</option>
+      <option>Travel</option>
+      <option>Bills</option>
+      <option>Salary</option>
+      <option>Other</option>
+    </select> -->
+    <select id="category" onchange="handleCategoryChange()">
+        <option value="Food">🍔 Food</option>
+        <option value="Travel">✈️ Travel</option>
+        <option value="Shopping">🛍️ Shopping</option>
+        <option value="Entertainment">🎮 Entertainment</option>
+        <option value="Health">💊 Health</option>
+        <option value="Groceries">🛒 Groceries</option>
+        <option value="Rent">🏠 Rent</option>
+        <option value="Utilities">💡 Utilities</option>
+        <option value="Education">📚 Education</option>
+        <option value="Salary">💼 Salary</option>
+        <option value="Freelance">🧑‍💻 Freelance</option>
+        <option value="Investments">📈 Investments</option>
+        <option value="Gifts">🎁 Gifts</option>
+        <option value="Subscriptions">📺 Subscriptions</option>
+        <option value="Other">➕ Other</option>
+      </select>
+      
+      <!-- Hidden input shown only if "Other" is selected -->
+      <input type="text" id="customCategory" placeholder="Enter category name" style="display:none;">
+      
+    <input type="text" id="note" placeholder="Note">
+    <input type="date" id="date">
+    <button onclick="addTransaction()">Save</button>
+  </div>
+  
+
+  <div class="filters">
+    <h2 style="margin-top:0;">Filter Transactions</h2>
+
+    <select onchange="applyFilter(this.value)">
+        
+      <option value="all">All Time</option>
+      <option value="1m">Last 1 Month</option>
+      <option value="3m">Last 3 Months</option>
+    </select>
+    <!-- <button onclick="toggleDarkMode()">Toggle Theme</button> -->
+  </div>
+
+  <div class="transaction-list" id="transactionList"></div>
+
+  <canvas id="incomeChart" width="400" height="300"></canvas>
+  <canvas id="expenseChart" width="400" height="300"></canvas>
+
+  <div class="card summary" id="categorySummary"></div>
+
+  <div class="export-import">
+    <button onclick="exportCSV()">Export CSV</button>
+    <button onclick="importCSV()">Import CSV</button>
+    <input type="file" id="csvFile" style="display:none">
+    <button onclick="backupData()">Backup JSON</button>
+    <button onclick="restoreData()">Restore JSON</button>
+    <input type="file" id="jsonFile" style="display:none">
+  </div>
+</div>
+
+<script>
+let transactions = JSON.parse(localStorage.getItem("monitoData") || "[]");
+let editIndex = -1;
+
+function saveData() {
+  localStorage.setItem("monitoData", JSON.stringify(transactions));
+  render();
+}
+
+function addTransaction() {
+  const amount = +document.getElementById("amount").value;
+  const type = document.getElementById("type").value;
+//   const category = document.getElementById("category").value;
+let category = document.getElementById("category").value;
+if (category === "Other") {
+  const custom = document.getElementById("customCategory").value.trim();
+  if (!custom) return alert("Please enter a category name for 'Other'");
+  category = custom;
+}
+
+  const note = document.getElementById("note").value;
+  const date = document.getElementById("date").value;
+//   const recurring = document.getElementById("recurring").checked;
+
+  if (!amount || !date) return alert("Amount and date are required");
+
+  const txn = { amount, type, category, note, date };
+
+  if (editIndex >= 0) {
+    transactions[editIndex] = txn;
+    editIndex = -1;
+  } else {
+    transactions.push(txn);
+  }
+
+  clearForm();
+  saveData();
+}
+function handleCategoryChange() {
+  const categorySelect = document.getElementById("category");
+  const customInput = document.getElementById("customCategory");
+  customInput.style.display = categorySelect.value === "Other" ? "block" : "none";
+}
+
+function clearForm() {
+  document.getElementById("amount").value = "";
+  document.getElementById("type").value = "expense";
+  document.getElementById("category").value = "Food";
+  document.getElementById("note").value = "";
+  document.getElementById("date").value = "";
+//   document.getElementById("recurring").checked = false;
+}
+
+function render(filter = "all") {
+  const now = new Date();
+  let data = transactions;
+
+  if (filter !== "all") {
+    const months = filter === "1m" ? 1 : 3;
+    const cutoff = new Date(now.getFullYear(), now.getMonth() - months, now.getDate());
+    data = transactions.filter(t => new Date(t.date) >= cutoff);
+  }
+
+  const list = document.getElementById("transactionList");
+  list.innerHTML = "";
+
+  data.forEach((t, i) => {
+    const div = document.createElement("div");
+    div.className = `transaction ${t.type}`;
+    div.innerHTML = `
+      <div class="transaction-header">
+        <span>${t.category} - ₹${t.amount}</span>
+        <span>${t.date}</span>
+      </div>
+      <div class="transaction-footer">
+        <span>${t.note || ''}</span>
+        <span>
+          <button class="btn-small btn-edit" onclick="editTransaction(${i})">Edit</button>
+          <button class="btn-small btn-delete" onclick="deleteTransaction(${i})">Delete</button>
+        </span>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+  const totalIncome = data.filter(t => t.type === "income")
+    .reduce((sum, t) => sum + +t.amount, 0);
+  const totalExpense = data.filter(t => t.type === "expense")
+    .reduce((sum, t) => sum + +t.amount, 0);
+  document.getElementById("totalIncome").innerText = "Income: ₹" + totalIncome;
+  document.getElementById("totalExpense").innerText = "Expense: ₹" + totalExpense;
+
+  renderCharts(data);
+  renderSummary(data);
+}
+
+function editTransaction(index) {
+  const t = transactions[index];
+  document.getElementById("amount").value = t.amount;
+  document.getElementById("type").value = t.type;
+  document.getElementById("category").value = t.category;
+  document.getElementById("note").value = t.note;
+  document.getElementById("date").value = t.date;
+//   document.getElementById("recurring").checked = t.recurring;
+  editIndex = index;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteTransaction(index) {
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "This transaction will be deleted!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Yes, delete it!',
+    reverseButtons: true
+  }).then((result) => {
+    if (result.isConfirmed) {
+      transactions.splice(index, 1);
+      saveData();
+      Swal.fire('Deleted!', 'The transaction has been removed.', 'success');
+    }
+  });
+}
+
+function renderCharts(data) {
+  const income = {}, expense = {};
+  data.forEach(t => {
+    const target = t.type === "income" ? income : expense;
+    target[t.category] = (target[t.category] || 0) + +t.amount;
+  });
+
+//   if (window.incomeChart) window.incomeChart.destroy();
+//   if (window.expenseChart) window.expenseChart.destroy();
+if (window.incomeChart && typeof window.incomeChart.destroy === 'function') {
+  window.incomeChart.destroy();
+}
+if (window.expenseChart && typeof window.expenseChart.destroy === 'function') {
+  window.expenseChart.destroy();
+}
+
+  window.incomeChart = new Chart(document.getElementById("incomeChart"), {
+    type: "pie",
+    data: {
+      labels: Object.keys(income),
+      datasets: [{
+        data: Object.values(income),
+        backgroundColor: ["#28a745", "#17a2b8", "#20c997", "#6f42c1", "#ffc107"]
+      }]
+    },
+    options: {
+      plugins: { title: { display: true, text: "Income Breakdown" } }
+    }
+  });
+
+  window.expenseChart = new Chart(document.getElementById("expenseChart"), {
+    type: "pie",
+    data: {
+      labels: Object.keys(expense),
+      datasets: [{
+        data: Object.values(expense),
+        backgroundColor: ["#dc3545", "#fd7e14", "#e83e8c", "#6610f2", "#adb5bd"]
+      }]
+    },
+    options: {
+      plugins: { title: { display: true, text: "Expense Breakdown" } }
+    }
+  });
+}
+
+function renderSummary(data) {
+  const summary = {};
+  data.forEach(t => {
+    const m = t.date.slice(0, 7);
+    if (!summary[m]) summary[m] = { income: 0, expense: 0 };
+    summary[m][t.type] += +t.amount;
+  });
+
+  let html = "<h3>📅 Monthly Summary</h3>";
+for (let month in summary) {
+  html += `
+    <div class="summary-card">
+      <strong>${month}</strong><br>
+      <span style="color:green;">Income: ₹${summary[month].income}</span> &nbsp; | &nbsp;
+      <span style="color:red;">Expense: ₹${summary[month].expense}</span>
+    </div>`;
+}
+
+  html += "</ul>";
+  document.getElementById("categorySummary").innerHTML = html;
+}
+
+function applyFilter(val) {
+  render(val);
+}
+
+function toggleDarkMode() {
+  document.body.classList.toggle("dark");
+}
+
+function exportCSV() {
+  const header = "amount,type,category,note,date";
+  const rows = transactions.map(t =>
+    [t.amount, t.type, t.category, t.note, t.date].join(",")
+  );
+  const csv = [header, ...rows].join("\n");
+  downloadFile("monito.csv", csv);
+}
+
+
+function importCSV() {
+  document.getElementById("csvFile").click();
+  document.getElementById("csvFile").onchange = e => {
+    const reader = new FileReader();
+    reader.onload = () => {
+  const lines = reader.result.trim().split("\n");
+  lines.slice(1).forEach(line => { // Skip header
+    const [amount, type, category, note, date] = line.split(",");
+    if (amount && date && !isNaN(+amount)) {
+      transactions.push({ amount: +amount, type, category, note, date });
+    }
+  });
+  saveData();
+};
+
+    reader.readAsText(e.target.files[0]);
+  };
+}
+
+function backupData() {
+  downloadFile("monito-backup.json", JSON.stringify(transactions));
+}
+
+function restoreData() {
+  document.getElementById("jsonFile").click();
+  document.getElementById("jsonFile").onchange = e => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      transactions = JSON.parse(reader.result);
+      saveData();
+    };
+    reader.readAsText(e.target.files[0]);
+  };
+}
+
+function downloadFile(name, content) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([content], { type: "text/plain" }));
+  a.download = name;
+  a.click();
+}
+
+render();
+</script>
+</body>
+</html>
